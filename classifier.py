@@ -130,7 +130,7 @@ def get_output(fp, outfile):
     colored_image = Image.fromarray((cm(output)*255).astype(np.uint8))
     colored_image.save(outfile)
     pred = model(X.to(device)).reshape(2,).argmax().item()
-    return pred, outfile
+    return pred
 
     # # fp = "/content/TCGA-A1-A0SB-01A-01-BS1/TCGA-A1-A0SB-01A-01-BS1_X_1024_Y_3072.png"
     # import glob
