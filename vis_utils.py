@@ -3,7 +3,7 @@ import copy
 import numpy as np
 from PIL import Image, ImageFilter,ImageOps
 import matplotlib.cm as mpl_color_map
-import cv2
+# import cv2
 import torch
 from torch.autograd import Variable
 from torchvision import models
