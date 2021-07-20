@@ -12,7 +12,7 @@ Original file is located at
 
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, models, transforms
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split, Dataset
@@ -30,29 +30,8 @@ import pandas as pd
 from PIL import Image, ImageFile
 import json
 import matplotlib.pyplot as plt
-ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-import os
-import numpy as np
-import glob, os
-import argparse
-from PIL import Image
-import cv2
-import time
-import itertools
-from torchvision import datasets, models, transforms
-import torch
-from torchvision import models
 from vis_utils import preprocess_image,save_class_activation_images
-import torch.nn as nn
-import json
-import pandas as pd
-import torch.nn.functional as F
-from torch.utils.data import Subset
-import torch.multiprocessing as mp
-import multiprocessing
-
-from torch.multiprocessing import Pool, set_start_method
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 def get_hyperpara(organ):
