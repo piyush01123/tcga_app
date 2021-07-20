@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script type="text/javascript" src="static/jquery.js"></script>
+  </head>
+  <body>
+    <input type="file" id="tcgaimg"></input>
+    <br>
+    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="inp_img"></img>
+    <br>
+
+    {% for organ in organs %}
+    <img src="static/assets/upload.png" alt=""  width='224' height='224' id='{{organ}}_heatmap'></img>
+    <img src="static/assets/upload.png" alt=""  width='224' height='224' id='{{organ}}_heatmap_superimposed'></img>
+    <br>
+    <p id='out_text_{{organ}}'></p>
+    <br>
+    {% endfor %}
+
+  </body>
+  <script type="text/javascript">
+  $("document").ready(function(){
+
+      $("#tcgaimg").change(function() {
+        console.log("SHOULD RUN");
+        $('#inp_img').attr('src', window.URL.createObjectURL(this.files[0]));
+        var form = new FormData();
+        var fileInputElement = document.getElementById('tcgaimg');
+        form.append("img", fileInputElement.files[0]);
+        $.ajax({
+                  type: 'POST',
+                  url: `/predict_v2`,
+                  processData: false,
+                  contentType: false,
+                  async: true,
+                  cache: false,
+                  data: form,
+                  success: function (data) {
+                    console.log(data);
+                    {% for organ in organs %}
+                    document.getElementById('{{organ}}_heatmap').src = "data:image/png;base64,"+data['{{organ}}']["gradcam_base64"][0];
+                    document.getElementById('{{organ}}_heatmap_superimposed').src = "data:image/png;base64,"+data['{{organ}}']["gradcam_base64"][1];
+                    document.getElementById('out_text_{{organ}}').textContent = 'Model Choice: {{organ}}, ' + "Predicted class: "+data['{{organ}}']["pred"];
+                    {% endfor %}
+                  }
+              })
+      });
+  });
+  </script>
+</html>
