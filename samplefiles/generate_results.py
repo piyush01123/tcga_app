@@ -1,3 +1,23 @@
+
+"""
+Run on ADA/Local as python3 generate_results --sample_root /ssd/.../samplefiles
+To sample files run sample_rand.py on ECDP server
+IMP: sample_root should have structure:
+|-sample_root-|-BRCA-|-cancer-|-original-|-*.png
+                              |-gradcam-|-(empty)
+                              |-gc_simp-|-(empty)
+                     |-normal-|-original-|-*.png
+                              |-gradcam-|-(empty)
+                              |-gc_simp-|-(empty)
+              |-COAD-|-cancer-|-*.png
+                              |-gradcam-|-(empty)
+                              |-gc_simp-|-(empty)
+                     |-normal-|-original-|-*.png
+                              |-gradcam-|-(empty)
+                              |-gc_simp-|-(empty)
+...
+"""
+
 # -*- coding: utf-8 -*-
 """GradCamTCGA.ipynb
 
@@ -30,6 +50,8 @@ import matplotlib.pyplot as plt
 from vis_utils import preprocess_image,save_class_activation_images
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+organs = ['BRCA','COAD','KICH','KIRC','KIRP','LIHC','LUAD','LUSC','PRAD','READ','STAD']
+
 
 def get_hyperpara(organ):
     organ_parameters = {
@@ -53,6 +75,13 @@ def get_hyperpara(organ):
     optimizer = organ_parameters[organ]['optimizer']
     lr = organ_parameters[organ]['lr']
     return dropouts,hidden_layer_units,optimizer,lr
+
+
+class MyDataSet(datasets.ImageFolder):
+    def __getitem__(self, index):
+        img, _ = super(datasets.ImageFolder, self).__getitem__(index)
+        path = self.imgs[index][0]
+        return img, path
 
 def define_model(dropouts,hidden_layer_units,num_classes=2):
     # We optimize the number of layers, hidden untis and dropout ratio in each layer.
@@ -168,12 +197,12 @@ class GradCam():
 
 
 
-def get_output(fp, heatmap_fname, heatmap_superimposed_fname, organ):
+def get_output(dloader, organ, checkpoints_dir):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("DEVICE {}".format(device), flush=True)
 
-    model_checkpoint = "CheckPoints/{}_best_model.pth".format(organ)
+    model_checkpoint = "{}/{}_best_model.pth".format(checkpoints_dir,organ)
     ckpt = torch.load(model_checkpoint) if device=="cuda" else \
            torch.load(model_checkpoint, map_location=torch.device('cpu'))
     ckpt = {k.replace("module.", ""): v for k, v in ckpt.items()}
@@ -183,6 +212,63 @@ def get_output(fp, heatmap_fname, heatmap_superimposed_fname, organ):
     model.load_state_dict(ckpt)
 
     model = model.to(device)
+    model.eval()
+
+    camex = CamExtractor(model,'layer4')
+
+    for input_tensor, paths in dloader:
+        input_tensor = input_tensor.to(device)
+        conv_output, model_output = camex.forward_pass(input_tensor)
+
+        model_output = model_output.view(1,-1)
+        target_class = np.argmax(model_output.data.numpy())
+        # Target for backprop
+        one_hot_output = torch.FloatTensor(1, model_output.size()[-1]).zero_()
+        one_hot_output[0][target_class] = 1
+        # Zero grads
+        self.model.zero_grad()
+        # Backward pass with specified target
+        model_output.backward(gradient=one_hot_output, retain_graph=True)
+        # Get hooked gradients
+        guided_gradients = self.extractor.gradients.data.numpy()[0]
+        # Get convolution outputs
+        target = conv_output.data.numpy()[0]
+        # Get weights from gradients
+        weights = np.mean(guided_gradients, axis=(1, 2))  # Take averages for each gradient
+        # Create empty numpy array for cam
+        cam = np.ones(target.shape[1:], dtype=np.float32)
+        # Multiply each weight with its conv output and then, sum
+        for i, w in enumerate(weights):
+            cam += w * target[i, :, :]
+        cam = np.maximum(cam, 0)
+        cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam))  # Normalize between 0-1
+        cam = np.uint8(cam * 255)  # Scale between 0-255 to visualize
+        cam = np.uint8(Image.fromarray(cam).resize((input_tensor.shape[2],
+                       input_tensor.shape[3]), Image.ANTIALIAS))/255
+        # ^ I am extremely unhappy with this line. Originally resizing was done in cv2 which
+        # supports resizing numpy matrices with antialiasing, however,
+        # when I moved the repository to PIL, this option was out of the window.
+        # So, in order to use resizing with ANTIALIAS feature of PIL,
+        # I briefly convert matrix to PIL image and then back.
+        # If there is a more beautiful way, do not hesitate to send a PR.
+
+        # You can also use the code below instead of the code line above, suggested by @ ptschandl
+        # from scipy.ndimage.interpolation import zoom
+        # cam = zoom(cam, np.array(input_image[0].shape[1:])/np.array(cam.shape))
+        save_class_activation_images(original_image, cam, heatmap_fname, heatmap_superimposed_fname)
+
+
+    # grad_cam = GradCam(model, target_layer="layer4")
+    # pred = grad_cam.generate_cam(img.convert('RGB'), X, heatmap_fname, heatmap_superimposed_fname)
+    # return pred
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sample_root", required=True, default="/ssd_scratch/cvit/piyush/samplefiles")
+    parser.add_argument("--checkpoints_dir", required=True, default="/ssd_scratch/cvit/piyush/CheckPoints")
+    parser.add_argument("--batch_size", default=32)
+    args = parser.parse_args()
 
     data_transform = transforms.Compose([
         transforms.Resize(256),
@@ -190,12 +276,10 @@ def get_output(fp, heatmap_fname, heatmap_superimposed_fname, organ):
         transforms.ToTensor(),
         transforms.Normalize([0.596, 0.436, 0.586], [0.2066, 0.240, 0.186])
         ])
+    dset = MyDataSet(root=args.sample_root, transform=data_transform)
+    dloader = DataLoader(dset, batch_size=args.batch_size, num_workers=0, shuffle=False)
+    for organ in organs:
+        get_output(dloader, organ, args.checkpoints_dir):
 
-    img = Image.open(fp)
-    X = data_transform(img)
-    X = X.reshape(-1,3,224,224)
-
-    model.eval()
-    grad_cam = GradCam(model, target_layer="layer4")
-    pred = grad_cam.generate_cam(img.convert('RGB'), X, heatmap_fname, heatmap_superimposed_fname)
-    return pred
+if __name__=="__main__":
+    main()

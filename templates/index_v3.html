@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <style>
+      .tab button.active { background-color: #ccc; }
+      table, th, td {
+        border: 1px solid black;
+      border-collapse: collapse;
+      }
+      th, td {
+      padding: 5px;
+      text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h1> Patch CNN Cross-organ Inference Demo Website</h1>
+    <div class="tab" style="overflow: hidden; border: 1px solid #ccc; background-color: #f1f1f1;">
+      <button class="tablinks" onclick="openTab(event, 'Demo')" id="demo_btn" style="font-size : 25px;">Demo</button>
+      <button class="tablinks" onclick="openTab(event, 'Samples')" id="samples_btn" style="font-size : 25px;">Sample Results</button>
+    </div>
+    <div id="Demo" class="tabcontent">
+        <h4>Upload a patch image by clicking on "Choose File"</h4>
+        <input type="file" id="tcgaimg"></input>
+        <br>
+        <table>
+          <tr>
+            <th> Input Image </th>
+            <th> Model Choice </th>
+            <th> Prediction </th>
+            <th> GradCam Heatmap </th>
+            <th> GradCam Heatmap Superimposed </th>
+          </tr>
+          {% for organ in organs %}
+          <tr>
+            <td> <img src="static/assets/upload.png" alt=""  width='224' height='224' id="{{organ}}_input"></img> </td>
+            <td> <p> {{organ}} </td>
+            <td> <p id='out_text_{{organ}}'></p> </td>
+            <td> <img src="static/assets/upload.png" alt=""  width='224' height='224' id='{{organ}}_heatmap'></img> </td>
+            <td> <img src="static/assets/upload.png" alt=""  width='224' height='224' id='{{organ}}_heatmap_superimposed'></img> </td>
+          </tr>
+          {% endfor %}
+        </table>
+    </div>
+
+    <div id="Samples" class="tabcontent">
+      SAMPLES TAB
+    </div>
+
+    <script>
+    function openTab(evt, tabName) {
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+      }
+      tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+      }
+      document.getElementById(tabName).style.display = "block";
+      evt.currentTarget.className += " active";
+    }
+    window.onload = function() {
+        var btn = document.getElementById('demo_btn');
+        btn.click();
+    };
+    </script>
+
+
+  </body>
+  <script type="text/javascript">
+
+  $("document").ready(function(){
+
+      $("#tcgaimg").change(function() {
+        console.log("SHOULD RUN");
+        {% for organ in organs %}
+        $('#{{organ}}_input').attr('src', window.URL.createObjectURL(this.files[0]));
+        {% endfor %}
+        var form = new FormData();
+        var fileInputElement = document.getElementById('tcgaimg');
+        form.append("img", fileInputElement.files[0]);
+        $.ajax({
+                  type: 'POST',
+                  url: `/predict_v2`,
+                  processData: false,
+                  contentType: false,
+                  async: true,
+                  cache: false,
+                  data: form,
+                  success: function (data) {
+                    console.log(data);
+                    {% for organ in organs %}
+                    document.getElementById('{{organ}}_heatmap').src = "data:image/png;base64,"+data['{{organ}}']["gradcam_base64"][0];
+                    document.getElementById('{{organ}}_heatmap_superimposed').src = "data:image/png;base64,"+data['{{organ}}']["gradcam_base64"][1];
+                    document.getElementById('out_text_{{organ}}').textContent = data['{{organ}}']["pred"];
+                    {% endfor %}
+                  }
+              })
+      });
+  });
+  </script>
+</html>

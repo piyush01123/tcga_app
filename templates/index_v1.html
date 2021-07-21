@@ -10,50 +10,41 @@
     <br>
     <img src="static/assets/upload.png" alt=""  width='224' height='224' id="inp_img"></img>
     <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_a"></img>
+
+    {% for organ in organs %}
+    <img src="static/assets/upload.png" alt=""  width='224' height='224' id='{{organ}}_heatmap'></img>
     <br>
-    <p id="out_text_a"></p>
+    <p id='out_text_{{organ}}'></p>
     <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_b"></img>
-    <br>
-    <p id="out_text_b"></p>
-    <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_c"></img>
-    <br>
-    <p id="out_text_c"></p>
-    <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_d"></img>
-    <br>
-    <p id="out_text_d"></p>
-    <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_e"></img>
-    <br>
-    <p id="out_text_e"></p>
-    <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_f"></img>
-    <br>
-    <p id="out_text_f"></p>
-    <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_g"></img>
-    <br>
-    <p id="out_text_g"></p>
-    <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_h"></img>
-    <br>
-    <p id="out_text_h"></p>
-    <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_i"></img>
-    <br>
-    <p id="out_text_i"></p>
-    <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_j"></img>
-    <br>
-    <p id="out_text_j"></p>
-    <br>
-    <img src="static/assets/upload.png" alt=""  width='224' height='224' id="out_img_k"></img>
-    <br>
-    <p id="out_text_k"></p>
-    <br>
+    {% endfor %}
+
   </body>
-  <script type="text/javascript" src="static/myScript_v1.js"></script>
+  <script type="text/javascript">
+  $("document").ready(function(){
+
+      $("#tcgaimg").change(function() {
+        console.log("SHOULD RUN");
+        $('#inp_img').attr('src', window.URL.createObjectURL(this.files[0]));
+        var form = new FormData();
+        var fileInputElement = document.getElementById('tcgaimg');
+        form.append("img", fileInputElement.files[0]);
+        $.ajax({
+                  type: 'POST',
+                  url: `/predict`,
+                  processData: false,
+                  contentType: false,
+                  async: true,
+                  cache: false,
+                  data: form,
+                  success: function (data) {
+                    console.log(data);
+                    {% for organ in organs %}
+                    document.getElementById('{{organ}}_heatmap').src = "data:image/png;base64,"+data['{{organ}}']["gradcam_base64"];
+                    document.getElementById('out_text_{{organ}}').textContent = 'Model Choice: {{organ}}, ' + "Predicted class: "+data['{{organ}}']["pred"];
+                    {% endfor %}
+                  }
+              })
+      });
+  });
+  </script>
 </html>

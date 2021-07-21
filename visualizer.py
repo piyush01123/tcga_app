@@ -12,7 +12,6 @@ Original file is located at
 
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, models, transforms
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split, Dataset
@@ -20,13 +19,10 @@ import torch
 import torchvision
 from PIL import Image
 import argparse
-from sklearn.metrics import classification_report
-import sklearn.metrics as metrics
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import pandas as pd
 from PIL import Image, ImageFile
 import json
 import matplotlib.pyplot as plt
