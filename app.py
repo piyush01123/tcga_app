@@ -58,12 +58,17 @@ def prediction_v2():
 
 @app.route('/v1', methods=['GET'])
 def webpage_v1():
-    return flask.render_template('index_v1.html')
+    return flask.render_template('index_v1.html', organs=organs)
+
+
+@app.route('/v2', methods=['GET'])
+def webpage_v2():
+    return flask.render_template('index_v2.html', organs=organs)
 
 
 @app.route('/', methods=['GET'])
-def webpage():
-    return flask.render_template('index_v2.html', organs=organs)
+def webpage_v3():
+    return flask.render_template('index_v3.html', organs=organs)
 
 
 if __name__=="__main__":
