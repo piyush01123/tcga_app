@@ -2,14 +2,17 @@
 import flask
 from werkzeug import secure_filename
 import os
+import glob
 import visualizer
 import visualizer_v2
 import base64
 import random
+import pandas as pd
 
 app = flask.Flask("TCGA Website", template_folder="templates")
 organs = ['BRCA', 'COAD', 'KICH', 'KIRC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', 'PRAD', 'READ', 'STAD']
-
+sample_dir = "static/TINY"
+n_samples = 5
 
 @app.route('/test', methods=['GET'])
 def hello_world():
@@ -66,9 +69,34 @@ def webpage_v2():
     return flask.render_template('index_v2.html', organs=organs)
 
 
+def get_sample_results():
+    data = {}
+    for organ in organs:
+        data[organ] = {}
+        for cls in "cancer", "normal":
+            data[organ][cls] = {}
+            orig_files = sorted(glob.glob(os.path.join(sample_dir,\
+                                            organ,cls,'original','*.png')))
+            data[organ][cls]['original'] = orig_files
+            for organ2 in organs:
+                data[organ][cls][organ2] = {}
+                for type in "gradcam", "gc_simp", "gc_th", "gc_bb_box":
+                    data[organ][cls][organ2][type] = sorted(glob.glob(os.path.join(sample_dir,\
+                                                    organ,cls,type,organ2,'*.png')))
+                    csv = os.path.join(sample_dir,organ,cls,"final_predictions_csv",organ2,"final_pred.csv")
+                    df = pd.read_csv(csv)
+                    df['files'] = df.paths.apply(lambda item: item.split('/')[-1])
+                    preds = df.pred_class[df.files.isin([item.split('/')[-1] for item in orig_files])]
+                    data[organ][cls][organ2]["preds"] = preds.tolist()
+    return data
+
+
 @app.route('/', methods=['GET'])
 def webpage_v3():
-    return flask.render_template('index_v3.html', organs=organs)
+    sample_results = get_sample_results()
+    return flask.render_template('index_v3.html', organs=organs, types=["cancer","normal"], \
+    results=sample_results, sample_ids=list(range(n_samples)), s="original", t="preds", \
+    arr=["gradcam", "gc_simp", "gc_th", "gc_bb_box"])
 
 
 if __name__=="__main__":

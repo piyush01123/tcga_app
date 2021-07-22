@@ -47,7 +47,45 @@
     </div>
 
     <div id="Samples" class="tabcontent">
-      SAMPLES TAB
+      {% for organ in organs %}
+        {% for type in types %}
+          {% for sample_id in sample_ids %}
+            <table>
+              <tr>
+                <th> Input Image </th>
+                <th> GT Subtype </th>
+                <th> GT Class </th>
+              </tr>
+              <tr>
+                <td> <img src="{{results[organ][type][s][sample_id]}}" alt=""  width='224' height='224'></img> </td>
+                <td> <p> {{organ}} </p> </td>
+                <td> <p> {{type}} </p> </td>
+              </tr>
+            </table>
+            <table>
+              <tr>
+                <th> Model Choice </th>
+                <th> Prediction </th>
+                <th> GradCam Heatmap </th>
+                <th> GradCam Heatmap Superimposed </th>
+                <th> GradCam Heatmap Thresholded </th>
+                <th> GradCam Heatmap Bounding Boxes </th>
+              </tr>
+              {% for organ2 in organs %}
+              <tr>
+                <td> <p> {{organ2}} </p> </td>
+                <td> {{results[organ][type][organ2][t][sample_id]}} </td>
+                {% for item in arr %}
+                <td> <img src="{{results[organ][type][organ2][item][sample_id]}}" alt=""  width='224' height='224'></img> </td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </table>
+            <br><br><br><br><br>
+          {% endfor %}
+        {% endfor %}
+      {% endfor %}
+
     </div>
 
     <script>
@@ -65,7 +103,7 @@
       evt.currentTarget.className += " active";
     }
     window.onload = function() {
-        var btn = document.getElementById('demo_btn');
+        var btn = document.getElementById('samples_btn');
         btn.click();
     };
     </script>
@@ -75,9 +113,8 @@
   <script type="text/javascript">
 
   $("document").ready(function(){
-
+      window.alert("We provide two modes to use this website. \nIn the 'Sample Results' mode; we show sample results for 5 patches from each subtype+class combination.\nIn the 'Demo' mode; we let the user upload any sample patch image and show results for the uploaded image.\nTo change the mode click on the tab at the top.\n");
       $("#tcgaimg").change(function() {
-        console.log("SHOULD RUN");
         {% for organ in organs %}
         $('#{{organ}}_input').attr('src', window.URL.createObjectURL(this.files[0]));
         {% endfor %}
