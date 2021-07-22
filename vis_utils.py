@@ -262,7 +262,11 @@ def get_bb(orig_img,thresh):
     canny_output = cv2.Canny(thresh, threshold, threshold * 2)
 
 
-    _, contours, _ = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    try:
+        _, contours, _ = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    except:
+        contours,_ = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     contours_poly = [None]*len(contours)
     boundRect = [None]*len(contours)
