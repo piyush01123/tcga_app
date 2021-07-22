@@ -111,13 +111,43 @@ def save_gradient_images(gradient, result_dir, file_name):
 
 
 
-def save_class_activation_images(org_img, activation_map, heatmap_fname, heatmap_superimposed_fname):
+def save_class_activation_images(org_img, activation_map, heatmap_fname, heatmap_superimposed_fname, bb_box_fname, th_image_fname):
     # Grayscale activation map
     heatmap, heatmap_on_image = apply_colormap_on_image(org_img, activation_map, 'brg')
     # Save colored heatmap
     save_image(heatmap, heatmap_fname)
     # # Save heatmap on iamge
     save_image(heatmap_on_image, heatmap_superimposed_fname)
+
+    heatmap = heatmap.convert('RGB')
+    heatmap = np.array(heatmap)
+    heatmap = heatmap[:, :, ::-1].copy() 
+    
+    orig_img_cv2 = np.array(org_img.resize((224,224)).convert('RGB'))[:,:,::-1].copy()
+    hsv = cv2.cvtColor(heatmap, cv2.COLOR_BGR2HSV)
+
+    #mask of green (20,25,25) ~ (70, 255,255)
+    mask = cv2.inRange(hsv, (20, 25, 25), (70, 255,255))
+
+    ## slice the green
+    imask = mask>0
+    green = np.zeros_like(heatmap, np.uint8)
+    green[imask] = heatmap[imask]
+    grey_img = cv2.cvtColor(green, cv2.COLOR_BGR2GRAY)
+    thresh = cv2.threshold(grey_img,0,255,cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+
+    cv2.imwrite(th_image_fname,thresh)
+
+    bb_img,bb_coordinates = get_bb(orig_img_cv2,thresh)
+
+    # path_to_json = os.path.join(cam_bb_box_dir,file_name+'.txt')
+    
+    # with open(path_to_json, 'w') as outfile:
+    #     json.dump(bb_coordinates, outfile)
+
+    # path_to_bb_img = os.path.join(cam_bb_box_dir,file_name+'.png')
+    
+    cv2.imwrite(bb_box_fname,bb_img)
     return
 
 
@@ -260,9 +290,11 @@ def recreate_image(im_as_var,mean,var):
 def get_bb(orig_img,thresh):
     threshold = 150
     canny_output = cv2.Canny(thresh, threshold, threshold * 2)
+    try:
+        _, contours, _ = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-
-    _, contours, _ = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    except:
+        contours,_ = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)   
 
     contours_poly = [None]*len(contours)
     boundRect = [None]*len(contours)
