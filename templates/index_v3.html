@@ -19,32 +19,13 @@
   <body>
     <h1> Patch CNN Cross-organ Inference Demo Website</h1>
     <div class="tab" style="overflow: hidden; border: 1px solid #ccc; background-color: #f1f1f1;">
-      <button class="tablinks" onclick="openTab(event, 'Demo')" id="demo_btn" style="font-size : 25px;">Demo</button>
       <button class="tablinks" onclick="openTab(event, 'Samples')" id="samples_btn" style="font-size : 25px;">Sample Results</button>
+      <button class="tablinks" onclick="openTab(event, 'Demo')" id="demo_btn" style="font-size : 25px;">Demo</button>
     </div>
-    <div id="Demo" class="tabcontent">
-        <h4>Upload a patch image by clicking on "Choose File"</h4>
-        <input type="file" id="tcgaimg"></input>
-        <br>
-        <table>
-          <tr>
-            <th> Input Image </th>
-            <th> Model Choice </th>
-            <th> Prediction </th>
-            <th> GradCam Heatmap </th>
-            <th> GradCam Heatmap Superimposed </th>
-          </tr>
-          {% for organ in organs %}
-          <tr>
-            <td> <img src="static/assets/upload.png" alt=""  width='224' height='224' id="{{organ}}_input"></img> </td>
-            <td> <p> {{organ}} </td>
-            <td> <p id='out_text_{{organ}}'></p> </td>
-            <td> <img src="static/assets/upload.png" alt=""  width='224' height='224' id='{{organ}}_heatmap'></img> </td>
-            <td> <img src="static/assets/upload.png" alt=""  width='224' height='224' id='{{organ}}_heatmap_superimposed'></img> </td>
-          </tr>
-          {% endfor %}
-        </table>
-    </div>
+    <img src="static/assets/upload.png" alt=""  width='224' height='224' style="display:none" ></img>
+
+
+
 
     <div id="Samples" class="tabcontent">
       {% for organ in organs %}
@@ -88,6 +69,32 @@
 
     </div>
 
+
+
+
+    <div id="Demo" class="tabcontent">
+        <h4>Upload a patch image by clicking on "Choose File"</h4>
+        <input type="file" id="tcgaimg"></input>
+        <br>
+        <table>
+          <tr>
+            <th> Input Image </th>
+            <th> Model Choice </th>
+            <th> Prediction </th>
+            <th> GradCam Heatmap </th>
+            <th> GradCam Heatmap Superimposed </th>
+          </tr>
+          {% for organ in organs %}
+          <tr>
+            <td> <img src="static/assets/upload.png" alt=""  width='224' height='224' id="{{organ}}_input"></img> </td>
+            <td> <p> {{organ}} </td>
+            <td> <p id='out_text_{{organ}}'></p> </td>
+            <td> <img src="static/assets/upload.png" alt=""  width='224' height='224' id='{{organ}}_heatmap'></img> </td>
+            <td> <img src="static/assets/upload.png" alt=""  width='224' height='224' id='{{organ}}_heatmap_superimposed'></img> </td>
+          </tr>
+          {% endfor %}
+        </table>
+    </div>
     <script>
     function openTab(evt, tabName) {
       var i, tabcontent, tablinks;
