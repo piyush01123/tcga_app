@@ -130,6 +130,7 @@ class GradCam():
         target_class = np.argmax(model_output.data.numpy())
         # Target for backprop
         one_hot_output = torch.FloatTensor(1, model_output.size()[-1]).zero_()
+        if torch.cuda.is_available(): one_hot_output=one_hot_output.to("cuda")
         one_hot_output[0][target_class] = 1
         # Zero grads
         self.model.zero_grad()
@@ -194,6 +195,7 @@ def get_output(fp, heatmap_fname, heatmap_superimposed_fname, organ):
     img = Image.open(fp)
     X = data_transform(img)
     X = X.reshape(-1,3,224,224)
+    X = X.to(device)
 
     model.eval()
     grad_cam = GradCam(model, target_layer="layer4")
