@@ -2,6 +2,9 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <title></title>
     <script type="text/javascript" src="static/jquery.js"></script>
     <style>
@@ -17,10 +20,13 @@
     </style>
   </head>
   <body>
-    <h1> Patch CNN Cross-organ Inference Demo Website</h1>
+    <h1> Exploring pan-cancer similarities from a deep learning perspective </h1>
     <div class="tab" style="overflow: hidden; border: 1px solid #ccc; background-color: #f1f1f1;">
       <button class="tablinks" onclick="openTab(event, 'Samples')" id="samples_btn" style="font-size : 25px;">Sample Results</button>
-      <button class="tablinks" onclick="openTab(event, 'Demo')" id="demo_btn" style="font-size : 25px;">Demo</button>
+      &emsp;
+      <button class="tablinks" onclick="openTab(event, 'Demo')" id="demo_btn" style="font-size : 25px;">Interactive Demo</button>
+      &emsp;
+      <button class="tablinks" onclick="openTab(event, 'Res')" id="demo_btn" style="font-size : 25px;">Resources</button>
     </div>
     <img src="static/assets/upload.png" alt=""  width='224' height='224' style="display:none" ></img>
 
@@ -36,29 +42,35 @@
                 <th> Input Image </th>
                 <th> GT Subtype </th>
                 <th> GT Class </th>
+                <th> Sample Number </th>
               </tr>
               <tr>
                 <td> <img src="{{results[organ][type][s][sample_id]}}" alt=""  width='224' height='224'></img> </td>
                 <td> <p> {{organ}} </p> </td>
                 <td> <p> {{type}} </p> </td>
+                <td> <p> {{sample_id}} </p> </td>
               </tr>
             </table>
             <table>
               <tr>
+                <th> Sample Number </th>
                 <th> Model Choice </th>
                 <th> Prediction </th>
                 <th> GradCam Heatmap </th>
                 <th> GradCam Heatmap Superimposed </th>
                 <th> GradCam Heatmap Thresholded </th>
                 <th> GradCam Heatmap Bounding Boxes </th>
+                <th> Jaccard Index </th>
               </tr>
               {% for organ2 in organs %}
               <tr>
+                <td> {{sample_id}} </td>
                 <td> <p> {{organ2}} </p> </td>
                 <td> {{results[organ][type][organ2][t][sample_id]}} </td>
                 {% for item in arr %}
                 <td> <img src="{{results[organ][type][organ2][item][sample_id]}}" alt=""  width='224' height='224'></img> </td>
                 {% endfor %}
+                <td> <p> {{results[organ][type][organ2][jac][sample_id]}} </p> </td>
               </tr>
               {% endfor %}
             </table>
@@ -73,9 +85,18 @@
 
 
     <div id="Demo" class="tabcontent">
-        <h4>Upload a patch image by clicking on "Choose File"</h4>
+        <!-- <h4>Upload a patch image by clicking on "Choose File"</h4>
         <input type="file" id="tcgaimg"></input>
-        <br>
+        <br> -->
+
+        <p class="lead">
+          <br><br>
+          Upload a patch image and view the results from all the models for the uploaded patch. It might take few seconds to load results.
+          <br><br>
+          <input type="file" id="tcgaimg"></input>
+          <br><br>
+        </p>
+
         <table>
           <tr>
             <th> Input Image </th>
@@ -95,6 +116,22 @@
           {% endfor %}
         </table>
     </div>
+
+
+
+
+    <div id="Res" class="tabcontent">
+      <br><br>
+      <p class="lead">
+        The checkpoints for our models are available <a href="https://drive.google.com/drive/folders/1gLjQpy3Yl7P5jwr0rSrjvmJL3Kpikgoq?usp=sharing"> here</a>.
+        <br><br>
+        The source code for the project is available <a href="https://drive.google.com/file/d/13pBWd_ejAqGgvM0poCCv5MOQ3R-fzvzj/view?usp=sharing"> here</a>.
+      </p>
+    </div>
+
+
+
+
     <script>
     function openTab(evt, tabName) {
       var i, tabcontent, tablinks;
