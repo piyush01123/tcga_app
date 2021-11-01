@@ -35,47 +35,39 @@
 
     <div id="Samples" class="tabcontent">
       {% for organ in organs %}
-        {% for type in types %}
-          {% for sample_id in sample_ids %}
-            <table>
-              <tr>
-                <th> Input Image </th>
-                <th> GT Subtype </th>
-                <th> GT Class </th>
-                <th> Sample Number </th>
-              </tr>
-              <tr>
-                <td> <img src="{{results[organ][type][s][sample_id]}}" alt=""  width='224' height='224'></img> </td>
-                <td> <p> {{organ}} </p> </td>
-                <td> <p> {{type}} </p> </td>
-                <td> <p> {{sample_id}} </p> </td>
-              </tr>
-            </table>
-            <table>
-              <tr>
-                <th> Sample Number </th>
-                <th> Model Choice </th>
-                <th> Prediction </th>
-                <th> GradCam Heatmap </th>
-                <th> GradCam Heatmap Superimposed </th>
-                <th> GradCam Heatmap Thresholded </th>
-                <th> GradCam Heatmap Bounding Boxes </th>
-                <th> Jaccard Index </th>
-              </tr>
-              {% for organ2 in organs %}
-              <tr>
-                <td> {{sample_id}} </td>
-                <td> <p> {{organ2}} </p> </td>
-                <td> {{results[organ][type][organ2][t][sample_id]}} </td>
-                {% for item in arr %}
-                <td> <img src="{{results[organ][type][organ2][item][sample_id]}}" alt=""  width='224' height='224'></img> </td>
-                {% endfor %}
-                <td> <p> {{results[organ][type][organ2][jac][sample_id]}} </p> </td>
-              </tr>
+        {% for sample_id in sample_ids %}
+          <table>
+            <tr>
+              <th> Input Image </th>
+              <th> GT Subtype </th>
+              <th> GT Class </th>
+            </tr>
+            <tr>
+              <td> <img src="{{results[organ][s][sample_id]}}" alt=""  width='224' height='224'></img> </td>
+              <td> <p> {{organ}} </p> </td>
+              <td> <p> cancer </p> </td>
+            </tr>
+          </table>
+          <table>
+            <tr>
+              <th> Model Choice </th>
+              <th> Prediction </th>
+              <th> GradCam Heatmap </th>
+              <th> GradCam Heatmap Superimposed </th>
+              <th> GradCam Heatmap Thresholded </th>
+              <th> GradCam Heatmap Bounding Boxes </th>
+            </tr>
+            {% for organ2 in organs %}
+            <tr>
+              <td> <p> {{organ2}} </p> </td>
+              <td> {{results[organ][t][organ2][sample_id]}} </td>
+              {% for item in arr %}
+              <td> <img src="{{results[organ][item][organ2][sample_id]}}" alt=""  width='224' height='224'></img> </td>
               {% endfor %}
-            </table>
-            <br><br><br><br><br>
-          {% endfor %}
+            </tr>
+            {% endfor %}
+          </table>
+          <br><br><br><br><br>
         {% endfor %}
       {% endfor %}
 
@@ -94,9 +86,9 @@
           Upload a patch image and view the results from all the models for the uploaded patch. It might take few seconds to load results.
           <br><br>
           <input type="file" id="tcgaimg"></input>
-          <br><br>
         </p>
-
+        <img style="width:10%;height:10%" src="static/assets/spinning-loading.gif" id="spinner"/>
+        <br><br>
         <table>
           <tr>
             <th> Input Image </th>
@@ -158,6 +150,7 @@
 
   $("document").ready(function(){
       window.alert("We provide two modes to use this website. \nIn the 'Sample Results' mode; we show sample results for 5 patches from each subtype+class combination.\nIn the 'Demo' mode; we let the user upload any sample patch image and show results for the uploaded image.\nTo change the mode click on the tab at the top.\n");
+      $('#spinner').hide();
       $("#tcgaimg").change(function() {
         {% for organ in organs %}
         $('#{{organ}}_input').attr('src', window.URL.createObjectURL(this.files[0]));
@@ -165,6 +158,7 @@
         var form = new FormData();
         var fileInputElement = document.getElementById('tcgaimg');
         form.append("img", fileInputElement.files[0]);
+        $('#spinner').show();
         $.ajax({
                   type: 'POST',
                   url: `/predict_v2`,
@@ -180,6 +174,7 @@
                     document.getElementById('{{organ}}_heatmap_superimposed').src = "data:image/png;base64,"+data['{{organ}}']["gradcam_base64"][1];
                     document.getElementById('out_text_{{organ}}').textContent = data['{{organ}}']["pred"];
                     {% endfor %}
+                    $('#spinner').hide();
                   }
               })
       });
