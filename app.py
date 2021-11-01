@@ -10,6 +10,7 @@ import random
 import pandas as pd
 from PIL import Image
 import numpy as np
+from collections import defaultdict
 
 app = flask.Flask("TCGA Website", template_folder="templates")
 organs = ['BRCA', 'COAD', 'KICH', 'KIRC', 'KIRP', 'LIHC', 'LUAD', 'LUSC', 'PRAD', 'READ', 'STAD']
@@ -78,39 +79,32 @@ def jacidx(a,b):
     return len(A_white.intersection(B_white))/ len(A_white.union(B_white))
 
 def get_sample_results():
-    data = {}
+    data = defaultdict(dict)
     for organ in organs:
-        data[organ] = {}
-        for cls in "cancer", "normal":
-            data[organ][cls] = {}
-            orig_files = sorted(glob.glob(os.path.join(sample_dir,\
-                                            organ,cls,'original','*.png')))
-            data[organ][cls]['original'] = orig_files
+        orig_files = sorted(glob.glob(os.path.join(sample_dir,\
+                                        organ,'original','*.png')))
+        data[organ]['original'] = orig_files
+        for type in "gradcam", "gc_simp", "gc_th", "gc_bb_box":
+            data[organ][type] = {}
             for organ2 in organs:
-                data[organ][cls][organ2] = {}
-                for type in "gradcam", "gc_simp", "gc_th", "gc_bb_box":
-                    data[organ][cls][organ2][type] = sorted(glob.glob(os.path.join(sample_dir,\
-                                                    organ,cls,type,organ2,'*.png')))
-                csv = os.path.join(sample_dir,organ,cls,"final_predictions_csv",organ2,"final_pred.csv")
-                df = pd.read_csv(csv)
-                df['files'] = df.paths.apply(lambda item: item.split('/')[-1])
-                preds = df.pred_class[df.files.isin([item.split('/')[-1] for item in orig_files])]
-                data[organ][cls][organ2]["preds"] = preds.tolist()
-    for organ in organs:
-        for cls in "cancer", "normal":
-            for organ2 in organs:
-                data[organ][cls][organ2]["jacidx"] = [jacidx(a,b) for a,b in zip(data[organ][cls][organ]["gc_th"], data[organ][cls][organ2]["gc_th"])]
-                print(organ,organ2,cls,data[organ][cls][organ]["gc_th"], data[organ][cls][organ2]["gc_th"],data[organ][cls][organ2]["jacidx"])
+                data[organ][type][organ2] = sorted(glob.glob(os.path.join(sample_dir,organ,type,organ2,'*.png')))
+        data[organ]["preds"] = {}
+        for organ2 in organs:
+            csv = os.path.join(sample_dir,organ,"final_predictions_csv",organ2,"final_pred.csv")
+            df = pd.read_csv(csv)
+            df['files'] = df.paths.apply(lambda item: item.split('/')[-1])
+            preds = df.pred_class[df.files.isin([item.split('/')[-1] for item in orig_files])]
+            data[organ]["preds"][organ2] = preds.tolist()
     return data
 
 
 @app.route('/', methods=['GET'])
 def webpage_v3():
-    sample_results = get_sample_results()
-    n_samples = len(sample_results["BRCA"]["cancer"]["original"])
-    return flask.render_template('index_v3.html', organs=organs, types=["cancer","normal"], \
-    results=sample_results, sample_ids=list(range(n_samples)), s="original", t="preds", \
-    arr=["gradcam", "gc_simp", "gc_th", "gc_bb_box"],jac="jacidx")
+    data = get_sample_results()
+    n_samples = len(data["BRCA"]["original"])
+    return flask.render_template('index_v3.html', organs=organs, \
+    results=data, sample_ids=list(range(n_samples)), s="original", t="preds", \
+    arr=["gradcam", "gc_simp", "gc_th", "gc_bb_box"])
 
 
 if __name__=="__main__":
